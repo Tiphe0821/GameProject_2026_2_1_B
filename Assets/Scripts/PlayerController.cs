@@ -89,5 +89,15 @@ public class PlayerController : MonoBehaviour
         }
 
         controller.Move(Vector3.up * verticalVelocity * Time.deltaTime);
+        
+
+        float animationSpeed = 0f;
+
+        if (moveDirection.sqrMagnitude > 0.001)
+        {
+            animationSpeed = isRunning ? 1f : 0.5f;
+        }
+
+        animator.SetFloat("Speed", animationSpeed, 0.1f, Time.deltaTime);
     }
 }
