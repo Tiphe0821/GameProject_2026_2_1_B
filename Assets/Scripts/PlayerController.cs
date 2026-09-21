@@ -1,8 +1,11 @@
-using System;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.Assertions.Must;
 using UnityEngine.InputSystem;
+
+public enum PlayerState
+{
+    Normal,
+    Pickup
+}
 
 public class PlayerController : MonoBehaviour
 {
@@ -20,6 +23,8 @@ public class PlayerController : MonoBehaviour
 
     private CharacterController controller;
     private float verticalVelocity;
+
+    private PlayerState currentState = PlayerState.Normal;
 
     private void Awake()
     {
@@ -42,6 +47,18 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
+        // 상태 상관없이 적용되는 중력
+        ApplyGravity();
+
+        // Normal 상태가 아니라면 이동 입력을 받지 않는다
+        if (currentState != PlayerState.Normal) return;
+
+        HandleMovement(keyboard);
+        
+    }
+
+    private void HandleMovement(Keyboard keyboard)
+    {
         // 1. 입력 구현
         Vector2 input = Vector2.zero;
 
@@ -73,23 +90,16 @@ public class PlayerController : MonoBehaviour
 
         controller.Move(moveDirection * currentSpeed * Time.deltaTime);
 
-        if(moveDirection.sqrMagnitude > 0.001)
+        if (moveDirection.sqrMagnitude > 0.001)
         {
             Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
         }
 
-        if (controller.isGrounded && verticalVelocity < 0f)
-        {
-            verticalVelocity = -2f;
-        }
-        else
-        {
-            verticalVelocity += gravity * Time.deltaTime;
-        }
+
 
         controller.Move(Vector3.up * verticalVelocity * Time.deltaTime);
-        
+
 
         float animationSpeed = 0f;
 
@@ -99,5 +109,32 @@ public class PlayerController : MonoBehaviour
         }
 
         animator.SetFloat("Speed", animationSpeed, 0.1f, Time.deltaTime);
+    }
+
+    private void ApplyGravity()
+    {
+        if(controller.isGrounded && verticalVelocity <0f)
+        {
+            verticalVelocity = -2f;
+        }
+        else
+        {
+            verticalVelocity += gravity * Time.deltaTime;
+        }
+
+        controller.Move(Vector3.up * verticalVelocity * Time.deltaTime);
+    }
+
+    public void ChangeState(PlayerState newState)
+    {
+        currentState = newState;
+
+        if (currentState != PlayerState.Normal)
+        {
+            animator.SetFloat("speed", 0);
+
+        }
+
+        Debug.Log("현재 상태 : " + currentState);
     }
 }
