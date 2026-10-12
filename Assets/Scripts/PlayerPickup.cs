@@ -5,13 +5,18 @@ using UnityEngine.InputSystem;
 public class PlayerPickup : MonoBehaviour
 {
 
-    [SerializeField] private Animator animator;
-    [SerializeField] private PlayerController playerController;
+    [SerializeField] private Animator animator;                     // 플레이어 애니메이션 재생 & 플레이어를 줍는동안 움직이지 못하게하는게 목적. 
+    [SerializeField] private PlayerController playerController;     // - 만약 플레이어가 채집중에 움직이지 못하게 할거라면 필요.
+    [SerializeField] private InteractionUI interactionUI;
     [SerializeField] private float detectionRadius = 2f;
     [SerializeField] private float pickupDuration = 1.2f;
     [SerializeField] private float pickupMoment = 0.55f;
 
     private PickupItem targetItem;
+
+
+    private Door targetDoor;
+    private NPC targetNPC;
 
     private bool isPickingUp;
 
@@ -28,6 +33,10 @@ public class PlayerPickup : MonoBehaviour
 
         // Player 주변에서 가장 가까운 아이템을 찾는다
         targetItem = FindClosestItem();
+        targetDoor = FindClosestDoor();
+        targetNPC = FindClosestNPC();
+
+        ShowGuide();
 
         if (targetItem == null) return;
 
@@ -35,9 +44,27 @@ public class PlayerPickup : MonoBehaviour
 
         // 가까운 아이템이 있을 떄 E키로 줍는다 \
 
+        if (targetNPC == null && targetItem == null && targetDoor == null) return;
+
         if(keyboard.eKey.wasPressedThisFrame)
         {
+            Interact();
+        }
+    }
+
+    private void Interact()
+    {
+        if(targetItem != null)
+        {
             StartCoroutine(PickupAnimation());
+        }
+        else if(targetDoor != null)
+        {
+            targetDoor.Interact();
+        }
+        else if (targetNPC != null)
+        {
+            interactionUI.ShowDialogue(targetNPC.GetNpcName(), targetNPC.GetMessage());
         }
     }
 
@@ -62,6 +89,69 @@ public class PlayerPickup : MonoBehaviour
         }
 
         return closestItem;
+    }
+
+    private Door FindClosestDoor()
+    {
+        Collider[] colliders = Physics.OverlapSphere(transform.position, detectionRadius, ~0, QueryTriggerInteraction.Collide);
+        Door closestDoor = null;
+        float closestDistance = Mathf.Infinity;
+
+        foreach(Collider targetCollider in colliders)
+        {
+            Door item = targetCollider.GetComponentInParent<Door>();
+
+            if (item == null) continue;
+            float distance = Vector3.Distance(transform.position, item.transform.position);
+
+            if(distance < closestDistance)
+            {
+                closestDistance = distance;
+                closestDoor = item;
+            }
+        }
+
+        return closestDoor;
+    }
+
+    private NPC FindClosestNPC()
+    {
+        Collider[] colliders = Physics.OverlapSphere(transform.position, detectionRadius, ~0, QueryTriggerInteraction.Collide);
+        NPC closestNPC = null;
+        float closestDistance = Mathf.Infinity;
+
+        foreach(Collider targetCollider in colliders)
+        {
+            NPC item = targetCollider.GetComponentInParent<NPC>();
+
+            if (item == null) continue;
+            float distance = Vector3.Distance(transform.position, item.transform.position);
+
+            if(distance < closestDistance)
+            {
+                closestDistance = distance;
+                closestNPC = item;
+            }
+        }
+
+        return closestNPC;
+    }
+
+    private void ShowGuide()
+    {
+        if(targetItem != null)
+        {
+            interactionUI.ShowGuide("[E] " + targetItem.GetItemName() + "줍기");
+        }
+        else if(targetDoor!= null)
+        {
+            interactionUI.ShowGuide(targetDoor.GetGuideText());
+        }
+        else if(targetNPC!= null)
+        {
+            interactionUI.ShowGuide(targetNPC.GetGuideText());
+
+        }
     }
 
     private IEnumerator PickupAnimation()
