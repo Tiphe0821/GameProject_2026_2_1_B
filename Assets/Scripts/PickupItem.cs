@@ -6,13 +6,22 @@ public class PickupItem : MonoBehaviour
     [SerializeField] private string itemName = "아이템";
     [SerializeField] private int amount = 1;
 
+    [TextArea]
+    [SerializeField] private string descripsion = "아이템 설명이 없습니다";
 
     [Header("화면 연출")]
     [SerializeField] private float rotationSpeed = 60f;
     [SerializeField] private float floatingHeight = 0.15f;
     [SerializeField] private float floatingSpeed = 2f;
+    
+    private SimpleInventory inventory;
 
     private Vector3 startPosition;
+
+    private void Awake()
+    {
+        inventory = FindFirstObjectByType<SimpleInventory>();
+    }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -35,7 +44,20 @@ public class PickupItem : MonoBehaviour
 
     public void Collect()
     {
+        if(inventory == null)
+        {
+            Debug.Log("SimpleInventory 를 찾을 수 없습니다");
+            return;
+        }
+
+        if(inventory.AddItem(itemName, amount, descripsion) == false )
+        {
+            return;
+        }
+
         Debug.Log(itemName + " " + amount + "개 획득");
+
+        
         Destroy(gameObject);
     }
 
